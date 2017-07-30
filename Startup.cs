@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,6 +7,10 @@ using Microsoft.AspNetCore.SpaServices.Webpack;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using ScoreKeepWeb.Models;
+using Microsoft.EntityFrameworkCore;
+using ScoreKeepWeb.Repositories.Interfaces;
+using ScoreKeepWeb.Repositories;
 
 namespace ScoreKeepWeb
 {
@@ -29,11 +32,15 @@ namespace ScoreKeepWeb
         public void ConfigureServices(IServiceCollection services)
         {
             // Add framework services.
+            services.AddDbContext<AppDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddScoped<IUsersRepository, UsersRepository>();
+            services.AddTransient<AppDbContextSeed>();
+
             services.AddMvc();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, AppDbContextSeed seeder)
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
@@ -62,6 +69,8 @@ namespace ScoreKeepWeb
                     name: "spa-fallback",
                     defaults: new { controller = "Home", action = "Index" });
             });
+
+            seeder.EnsureSeedData().Wait();
         }
     }
 }
